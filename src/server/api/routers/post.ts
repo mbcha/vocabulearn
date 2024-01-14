@@ -41,8 +41,18 @@ export const postRouter = createTRPCRouter({
   }),
 
   getRandomWord: protectedProcedure.query(({ ctx }) => {
-    const words = Object.keys(ctx.dictionary);
-    const randomWord = words[Math.floor(Math.random() * words.length)];
-    return randomWord;
+    const dictionary = ctx.dictionary;
+    const keys = Object.keys(dictionary);
+    const word = keys[Math.floor(Math.random() * keys.length)]
+    const definition = dictionary[word!];
+    return { word, definition };
+  }),
+
+  findDefinition: protectedProcedure
+    .input(z.object({ word: z.string().min(1) }))
+    .query(({ ctx, input }) => {
+      const word = input.word;
+      const definition = ctx.dictionary[word];
+      return { word, definition };
   })
 });
