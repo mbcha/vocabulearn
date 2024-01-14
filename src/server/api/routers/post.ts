@@ -40,17 +40,9 @@ export const postRouter = createTRPCRouter({
     return "you can now see this secret message!";
   }),
 
-  getRandomWord: protectedProcedure.query(() => {
-    return 'random word'
-    // const fileContents = await readFile();
-    // try {
-    //   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    //   const jsonData = JSON.parse(fileContents);
-    //   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument
-    //   return jsonData
-    // } catch (error) {
-    //   throw new Error(`Error parsing JSON: ${(error as Error).message}`);
-    //   // return 'error'
-    // }
+  getRandomWord: protectedProcedure.query(({ ctx }) => {
+    const words = Object.keys(ctx.dictionary);
+    const randomWord = words[Math.floor(Math.random() * words.length)];
+    return randomWord;
   })
 });
