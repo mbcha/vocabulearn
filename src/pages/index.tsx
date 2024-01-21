@@ -3,8 +3,16 @@ import Head from "next/head";
 
 import { api } from "@/utils/api";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCheck, faTrash, faPlus, faRotate, faPenToSquare } from '@fortawesome/free-solid-svg-icons'
+import { faCheckDouble, faTrashCan, faHeart, faRotate, faPenToSquare, faCaretDown, faCaretUp } from '@fortawesome/free-solid-svg-icons'
 import type { Word } from "@prisma/client";
+import { useState, useEffect } from "react";
+
+interface WordProps {
+  id?: number;
+  name: string;
+  definition: string;
+  notes?: string | null;
+}
 
 export default function Home() {
   return (
@@ -20,68 +28,90 @@ export default function Home() {
 }
 
 function Body() {
-  const { data: sessionData } = useSession();
+  const [shouldGenerateWord, setShouldGenerateWord] = useState(true);
+
+  const { data: randomWord = { name: '', definition: '' }, refetch: generateRandomWord } = api.word.getRandomWord.useQuery(undefined, {
+    enabled: false
+  });
+
+  useEffect(() => {
+    if (shouldGenerateWord) {
+      void generateRandomWord()
+      setShouldGenerateWord(false)
+    }
+  }, [shouldGenerateWord, generateRandomWord]);
 
   return (
-    <main className=" flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]">
-      <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
-        { sessionData ? <UserGreeting /> : <GuestGreeting /> }
-      </div>
+    <main className="flex min-h-screen relative max-h-full flex-col items-center justify-center bg-gradient-to-r from-cyan-500 to-blue-500">
+      <NavBar />
+      <UserGreeting randomWord={randomWord} generateRandomWord={() => setShouldGenerateWord(true)} />
     </main>
   )
 }
 
-function UserGreeting() {
-  const { data: userWords, refetch: refetchUserWords } = api.word.getUserWords.useQuery(undefined, {
-    enabled: true
-  });
-
-  const { mutate: addWord, isLoading: isAddingWord } = api.word.create.useMutation();
-
-  const handleOnAddClick = ({ name, definition }: { name: string, definition: string }) => {
-    console.log('handleOnAddClick')
-    console.log(name, definition)
-    if (isAddingWord) return;
-    if (!name || !definition) return;
-
-    addWord({ name, definition });
-    void refetchUserWords();
-  }
+function NavBar() {
+  const { data: sessionData } = useSession();
 
   return (
-    <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
-      <RandomWordGenerator handleOnAddClick={() => handleOnAddClick} />
-      <div className="flex flex-col items-center gap-2">
-        { userWords?.length && userWords.map((userWord: Word) => (
-          <WordCard
-            key={userWord.id as number}
-            value={{ word: userWord.name, definition: userWord.definition }}
-            saved={true}
-          />
-        ))}
-      </div>
-      <SignOutButton />
-    </div>
-  )
-}
-
-function GuestGreeting() {
-  return (
-    <>
-      <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
+    <nav className="w-full fixed top-0 flex justify-between items-center px-4 py-2 shadow-lg shadow-white/20 bg-gradient-to-r from-cyan-500 to-blue-500">
+      <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-[3rem]">
         Vocabulearn
       </h1>
       <div className="flex flex-col items-center gap-2">
-        <SignInButton />
+        { sessionData?.user.email ? <SignOutButton /> : <SignInButton /> }
       </div>
-    </>
+    </nav>
+  )
+}
+
+function UserGreeting({ randomWord, generateRandomWord }: { randomWord: WordProps, generateRandomWord: () => void}) {
+  const { data: sessionData } = useSession();
+  const { data: userWords, refetch: refetchUserWords } = api.word.getUserWords.useQuery(undefined, {
+    enabled: !!sessionData?.user?.email
+  });
+
+  const onAfterAction = (action: string) => {
+    switch (action) {
+      case 'create':
+        void refetchUserWords()
+      case 'create':
+      case 'refresh':
+        void generateRandomWord()
+        break;
+      case 'delete':
+      case 'update':
+        void refetchUserWords()
+        break;
+    }
+  }
+
+  return (
+    <div className="container flex flex-col items-center justify-center gap-12 px-4 py-2 mt-28 mb-16">
+      { randomWord.definition &&
+        <WordCard
+          value={randomWord}
+          onAfterAction={onAfterAction}
+        />
+      }
+      { sessionData?.user?.email && !!userWords?.length && (
+        <div className="w-full flex flex-col items-center gap-2">
+          { userWords.map((userWord: Word) => (
+            <WordCard
+              key={userWord.id}
+              value={{ id: userWord.id, name: userWord.name, definition: userWord.definition, notes: userWord.notes }}
+              onAfterAction={onAfterAction}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
 function SignInButton() {
   return (
     <button
-      className="rounded-full bg-white/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20"
+      className="rounded-full px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/10 border-cyan-500 border-2"
       onClick={() => void signIn()}
     >
       Sign in
@@ -100,58 +130,118 @@ function SignOutButton() {
   );
 }
 
-function RandomWordGenerator({ handleOnAddClick }: { handleOnAddClick: () => any}) {
-  const { data: randomWord = { word: '', definition: '' }, refetch: generateRandomWord } = api.word.getRandomWord.useQuery(undefined, {
-    enabled: false
-  });
+function WordCard({ value: { id, name, definition, notes }, onAfterAction }: { value: WordProps, onAfterAction: (action: string) => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [inputDefinition, setInputDefinition] = useState<string>(definition);
+  const [inputNotes, setInputNotes] = useState<string>(notes ?? '');
+  const { data: sessionData } = useSession();
 
-  return (
-    <>
-      <button
-        className="rounded-full bg-white/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20"
-        onClick={() => generateRandomWord()}
-      >
-        Show random word
-      </button>
-      { randomWord.definition &&
-        <WordCard
-          value={randomWord}
-          saved={false}
-          onAddClick={handleOnAddClick({ name: randomWord.word, definition: randomWord.definition })}
-          onRefreshClick={() => generateRandomWord()}
-        />
-      }
-    </>
-  )
-}
+  const handleOnSuccess = (action: string) => ({
+    onSuccess: () => {
+      onAfterAction(action)
+    }
+  })
 
-function WordCard({ value: { word, definition }, saved, onRefreshClick, onAddClick }: { value: { word: string | undefined, definition: string | undefined }, saved: boolean, onRefreshClick?: () => void, onAddClick?: () => void }) {
+  const { mutate: createWord, isLoading: isCreatingWord } = api.word.create.useMutation(handleOnSuccess('create'));
+  const { mutate: updateWord, isLoading: isUpdatingWord } = api.word.update.useMutation(handleOnSuccess('update'));
+  const { mutate: deleteWord, isLoading: isDeletingWord } = api.word.delete.useMutation(handleOnSuccess('delete'));
+
+  const handleOnClick = (action: string) => {
+    switch (action) {
+      case 'create':
+        if (isCreatingWord) return;
+
+        sessionData?.user?.email ? void createWord({ name, definition }) : void signIn();
+        break;
+      case 'edit':
+        setIsEditing(!isEditing);
+        break;
+      case 'update':
+        if (isUpdatingWord) return;
+
+        setIsEditing(false);
+        void updateWord({ id: id!, notes: inputNotes, definition: inputDefinition })
+        break;
+      case 'delete':
+        if (isDeletingWord) return;
+
+        void deleteWord({ id: id! })
+        break;
+      case 'refresh':
+        void onAfterAction('refresh')
+        setIsExpanded(false)
+        break;
+    }
+  }
+
   const Actions = () => {
-    if (saved) {
+    if (id) {
       return (
-        <div className="border-l-2 flex flex-col">
-          <FontAwesomeIcon icon={faCheck} className="p-2 cursor-pointer" />
-          <FontAwesomeIcon icon={faPenToSquare} className="p-2 cursor-pointer" />
-          <FontAwesomeIcon icon={faTrash} className="p-2 cursor-pointer" />
-        </div>
+        <>
+          <FontAwesomeIcon icon={faCheckDouble} className="p-4 cursor-pointer text-gray-800 text-2xl pb-5" />
+          <FontAwesomeIcon icon={faPenToSquare} className="p-4 cursor-pointer text-gray-800 text-2xl pb-5" onClick={() => handleOnClick('edit')} />
+          <FontAwesomeIcon icon={faTrashCan} className="p-4 cursor-pointer text-gray-800 text-2xl" onClick={() => handleOnClick('delete')} />
+        </>
       )
     } else {
       return (
-        <div className="border-l-2 flex flex-col">
-          <FontAwesomeIcon icon={faPlus} className="p-2 cursor-pointer" onClick={onAddClick} />
-          <FontAwesomeIcon icon={faRotate} className="p-2 cursor-pointer" onClick={onRefreshClick} />
-        </div>
+        <>
+          { sessionData?.user?.email && <FontAwesomeIcon icon={faHeart} className="p-4 cursor-pointer text-gray-800 text-2xl pb-5" onClick={() => handleOnClick('create')} /> }
+          <FontAwesomeIcon icon={faRotate} className="p-4 cursor-pointer text-gray-800 text-2xl" onClick={() => handleOnClick('refresh')} />
+        </>
       )
     }
   }
 
   return (
-    <div className={saved ? "bg-fuchsia-100 rounded-xl shadow-lg flex" : "bg-white rounded-xl shadow-lg flex"}>
-      <div className="p-8">
-        <p className="text-2xl font-bold text-gray-800">{ word }</p>
-        <p className="inline text-lg text-gray-500">{ definition }</p>
+    <div className={`rounded-xl shadow-lg flex w-full justify-between ${id ? 'bg-white/60' : 'bg-white/80'}`}>
+      <div className="p-8 w-full">
+        <p className="text-2xl font-bold text-gray-800 mb-3">{ name.charAt(0).toUpperCase() + name.slice(1) }</p>
+        { isEditing && (
+          <div className="w-full flex flex-col justify-start">
+            <textarea className="w-full text-lg text-gray-500 mb-2 rounded p-2 bg-white/50 focus-visible:outline-none" value={inputDefinition} onChange={(e) => setInputDefinition(e.target.value)} />
+            <input type="text" className="w-full text-lg text-gray-500 italic mb-2 rounded p-2 bg-white/50 focus-visible:outline-none" value={inputNotes} onChange={(e) => setInputNotes(e.target.value)} placeholder="Add note" />
+            <div className="self-end rounded-full p-0.5 bg-gradient-to-l from-cyan-500 to-blue-500">
+              <button
+                className="rounded-full bg-white/60 px-10 py-3 font-semibold no-underline transition hover:bg-white/70 self-end"
+                onClick={() => handleOnClick('update')}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
+        { !isEditing && (
+          <>
+            { isExpanded ? (
+              <p className="text-lg text-gray-600 mb-2">
+                { definition }
+                { definition.length > 200 && (
+                  <FontAwesomeIcon
+                    icon={faCaretUp}
+                    className="cursor-pointer text-lg text-blue-500 inline ml-2"
+                    onClick={() => setIsExpanded(false)}
+                  />
+                )}
+              </p>
+            ) : (
+              <p className="text-lg text-gray-600 mb-2">
+                { definition.slice(0, 200) }
+                { definition.length > 200 && (
+                  <p className="inline text-lg" onClick={() => setIsExpanded(true)}>
+                    ... <FontAwesomeIcon icon={faCaretDown} className="cursor-pointer text-lg text-blue-500 ml-2" />
+                  </p>
+                )}
+              </p>
+            )}
+            { notes && <p className="text-lg text-gray-600 italic">{ notes }</p> }
+          </>
+        )}
       </div>
-      <Actions />
+      <div className="border-l-2 border-blue-500 flex flex-col">
+        <Actions />
+      </div>
     </div>
   )
 }
