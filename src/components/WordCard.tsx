@@ -68,7 +68,7 @@ const WordCard = ({ value: { id, name, definition, notes }, onAfterAction }: Wor
           <div className="w-full flex flex-col justify-start">
             <textarea className="w-full text-lg text-gray-500 mb-2 rounded p-2 bg-white/50 focus-visible:outline-none" value={inputDefinition} onChange={(e) => setInputDefinition(e.target.value)} />
             <input type="text" className="w-full text-lg text-gray-500 italic mb-2 rounded p-2 bg-white/50 focus-visible:outline-none" value={inputNotes} onChange={(e) => setInputNotes(e.target.value)} placeholder="Add note" />
-            <div className="self-end rounded-full p-0.5 bg-gradient-to-l from-cyan-500 to-blue-500">
+            <div className="self-end rounded-full p-0.5 bg-gradient">
               <button
                 className="rounded-full bg-white/60 px-10 py-3 font-semibold no-underline transition hover:bg-white/70 self-end"
                 onClick={() => handleOnClick('update')}
@@ -86,7 +86,7 @@ const WordCard = ({ value: { id, name, definition, notes }, onAfterAction }: Wor
                 { definition.length > 200 && (
                   <FontAwesomeIcon
                     icon={faCaretUp}
-                    className="cursor-pointer text-lg text-blue-500 inline ml-2"
+                    className="cursor-pointer text-sm text-secondary inline ml-2 h-6 mb-[-4px]"
                     onClick={() => setIsExpanded(false)}
                   />
                 )}
@@ -96,7 +96,7 @@ const WordCard = ({ value: { id, name, definition, notes }, onAfterAction }: Wor
                 { definition.slice(0, 200) }
                 { definition.length > 200 && (
                   <p className="inline text-lg" onClick={() => setIsExpanded(true)}>
-                    ... <FontAwesomeIcon icon={faCaretDown} className="cursor-pointer text-lg text-blue-500 ml-2" />
+                    ... <FontAwesomeIcon icon={faCaretDown} className="cursor-pointer text-sm text-secondary ml-2 h-6 mb-[-3px]" />
                   </p>
                 )}
               </p>
@@ -116,7 +116,7 @@ const Actions = ({ id, handleOnClick }: {id?: number, handleOnClick: (action: st
   const { data: sessionData } = useSession();
 
   return (
-    <div className="border-l-2 border-blue-500 flex flex-col">
+    <div className="border-l-2 border-secondary flex flex-col">
       { id ? (
         <>
           <FontAwesomeIcon icon={faCheckDouble} className="p-4 cursor-pointer text-gray-800 text-2xl pb-5" />
