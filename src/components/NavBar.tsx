@@ -1,7 +1,7 @@
 import { signIn, signOut, useSession } from "next-auth/react";
 import ColorPicker from "./ColorPicker";
 
-const NavBar = ({ setColors }: { setColors: (value: { from: string, to: string }) => void }) => {
+const NavBar = ({ setColors }: { setColors: (value: { from?: string, to?: string }) => void }) => {
   return (
     <nav className="w-full fixed top-0 flex justify-between items-center px-4 py-2 shadow-lg shadow-white/20 bg-i-inherit relative">
       <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-[3rem]">

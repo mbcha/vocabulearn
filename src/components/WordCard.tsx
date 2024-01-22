@@ -81,7 +81,7 @@ const WordCard = ({ value: { id, name, definition, notes }, onAfterAction }: Wor
         { !isEditing && (
           <>
             { isExpanded ? (
-              <p className="text-lg text-gray-600 mb-2">
+              <p className="text-lg text-gray-600 mb-2 inline">
                 { definition }
                 { definition.length > 200 && (
                   <FontAwesomeIcon
@@ -96,7 +96,7 @@ const WordCard = ({ value: { id, name, definition, notes }, onAfterAction }: Wor
                 { definition.slice(0, 200) }
                 { definition.length > 200 && (
                   <p className="inline text-lg" onClick={() => setIsExpanded(true)}>
-                    ... <FontAwesomeIcon icon={faCaretDown} className="cursor-pointer text-sm text-secondary ml-2 h-6 mb-[-3px]" />
+                    ... <FontAwesomeIcon icon={faCaretDown} className="cursor-pointer text-sm text-secondary inline ml-2 h-6" />
                   </p>
                 )}
               </p>

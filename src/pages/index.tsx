@@ -6,7 +6,6 @@ import WordCard from "@/components/WordCard";
 import { api } from "@/utils/api";
 import type { Word } from "@prisma/client";
 import { useState, useEffect } from "react";
-import { getRGBColor } from "@/utils";
 
 interface WordProps {
   id?: number;
@@ -16,12 +15,12 @@ interface WordProps {
 }
 
 const Home = () => {
-  const [currentColor, setCurrentColor] = useState<{ from?: string, to?: string }>({ from: getRGBColor('#06b6d4', 'primary'), to: getRGBColor('#3b82f6', 'secondary') });
+  const [currentColor, setCurrentColor] = useState<{ from?: string, to?: string }>({ from: '--color-primary: #06b6d4;', to: '--color-secondary: #3b82f6;' });
 
-  const onColorChange = (value: { from: string, to: string }) => {
+  const onColorChange = (value: { from?: string, to?: string }) => {
     setCurrentColor({
-      from: getRGBColor(value.from, 'primary'),
-      to: getRGBColor(value.to, 'secondary')
+      from: value.from ? `--color-primary: ${value.from};` : currentColor.from,
+      to: value.to ? `--color-secondary: ${value.to};` : currentColor.to
     })
   }
 
@@ -33,12 +32,12 @@ const Home = () => {
         <link rel="icon" href="/favicon.ico" />
         <style>:root {`{${currentColor.from} ${currentColor.to}}`}</style>
       </Head>
-      <Body onColorChange={onColorChange} />
+      <Body setColors={onColorChange} />
     </>
   );
 }
 
-const Body = ({ onColorChange }: { onColorChange: (color: { from: string, to: string }) => void }) => {
+const Body = ({ setColors }: { setColors: (color: { from?: string, to?: string }) => void }) => {
   const [shouldGenerateWord, setShouldGenerateWord] = useState(true);
 
   const { data: randomWord = { name: '', definition: '' }, refetch: generateRandomWord } = api.word.getRandomWord.useQuery(undefined, {
@@ -54,7 +53,7 @@ const Body = ({ onColorChange }: { onColorChange: (color: { from: string, to: st
 
   return (
     <main className={`flex min-h-screen relative max-h-full flex-col items-center justify-center bg-gradient`}>
-      <NavBar setColors={onColorChange} />
+      <NavBar setColors={setColors} />
       <WordCards randomWord={randomWord} generateRandomWord={() => setShouldGenerateWord(true)} />
     </main>
   )
