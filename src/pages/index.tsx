@@ -39,10 +39,18 @@ const Home = () => {
 
 const Body = ({ setColors }: { setColors: (color: { from?: string, to?: string }) => void }) => {
   const [shouldGenerateWord, setShouldGenerateWord] = useState(true);
+  const [currentLanguage, setCurrentLanguage] = useState("en");
 
-  const { data: randomWord = { name: '', definition: '' }, refetch: generateRandomWord } = api.word.getRandomWord.useQuery(undefined, {
+  const { data: randomWord, refetch: generateRandomWord } = api.word.getRandomWord.useQuery({
+    language: currentLanguage
+  }, {
     enabled: false
   });
+
+  const changeCurrentLanguage = (value: string) => {
+    setCurrentLanguage(value)
+    setShouldGenerateWord(true)
+  }
 
   useEffect(() => {
     if (shouldGenerateWord) {
@@ -53,15 +61,27 @@ const Body = ({ setColors }: { setColors: (color: { from?: string, to?: string }
 
   return (
     <main className={`flex min-h-screen relative max-h-full flex-col items-center justify-center bg-gradient`}>
-      <NavBar setColors={setColors} />
-      <WordCards randomWord={randomWord} generateRandomWord={() => setShouldGenerateWord(true)} />
+      <NavBar
+        setColors={setColors}
+        setCurrentLanguage={changeCurrentLanguage}
+        currentLanguage={currentLanguage}
+      />
+      { randomWord && (
+        <WordCards
+          randomWord={randomWord}
+          generateRandomWord={() => setShouldGenerateWord(true)}
+          currentLanguage={currentLanguage}
+        />
+      )}
     </main>
   )
 }
 
-const WordCards = ({ randomWord, generateRandomWord }: { randomWord: WordProps, generateRandomWord: () => void }) => {
+const WordCards = ({ randomWord, generateRandomWord, currentLanguage }: { randomWord: WordProps, generateRandomWord: () => void, currentLanguage: string }) => {
   const { data: sessionData } = useSession();
-  const { data: userWords, refetch: refetchUserWords } = api.word.getUserWords.useQuery(undefined, {
+  const { data: userWords, refetch: refetchUserWords } = api.word.getUserWords.useQuery({
+    language: 'en'
+  }, {
     enabled: !!sessionData?.user?.email
   });
 
@@ -86,6 +106,7 @@ const WordCards = ({ randomWord, generateRandomWord }: { randomWord: WordProps, 
         <WordCard
           value={randomWord}
           onAfterAction={onAfterAction}
+          currentLanguage={currentLanguage}
         />
       }
       { sessionData?.user?.email && !!userWords?.length && (
@@ -95,6 +116,7 @@ const WordCards = ({ randomWord, generateRandomWord }: { randomWord: WordProps, 
               key={userWord.id}
               value={{ id: userWord.id, name: userWord.name, definition: userWord.definition, notes: userWord.notes }}
               onAfterAction={onAfterAction}
+              currentLanguage={currentLanguage}
             />
           ))}
         </div>

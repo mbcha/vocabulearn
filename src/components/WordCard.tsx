@@ -1,6 +1,5 @@
 import { useSession } from "next-auth/react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCheckDouble, faTrashCan, faHeart, faRotate, faPenToSquare, faCaretDown, faCaretUp } from '@fortawesome/free-solid-svg-icons'
 import { useState } from "react";
 import { api } from "@/utils/api";
 
@@ -14,9 +13,10 @@ interface WordProps {
 type WordCardProps = {
   value: WordProps,
   onAfterAction: (action: string) => void
+  currentLanguage: string;
 }
 
-const WordCard = ({ value: { id, name, definition, notes }, onAfterAction }: WordCardProps) => {
+const WordCard = ({ value: { id, name, definition, notes }, currentLanguage, onAfterAction }: WordCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [inputDefinition, setInputDefinition] = useState<string>(definition);
@@ -37,7 +37,7 @@ const WordCard = ({ value: { id, name, definition, notes }, onAfterAction }: Wor
       case 'create':
         if (isCreatingWord) return;
 
-        void createWord({ name, definition });
+        void createWord({ name, definition, language: currentLanguage });
         break;
       case 'edit':
         setIsEditing(!isEditing);
@@ -85,7 +85,7 @@ const WordCard = ({ value: { id, name, definition, notes }, onAfterAction }: Wor
                 { definition }
                 { definition.length > 200 && (
                   <FontAwesomeIcon
-                    icon={faCaretUp}
+                    icon="caret-up"
                     className="cursor-pointer text-sm text-secondary inline ml-2 h-6 mb-[-4px]"
                     onClick={() => setIsExpanded(false)}
                   />
@@ -96,7 +96,7 @@ const WordCard = ({ value: { id, name, definition, notes }, onAfterAction }: Wor
                 { definition.slice(0, 200) }
                 { definition.length > 200 && (
                   <p className="inline text-lg" onClick={() => setIsExpanded(true)}>
-                    ... <FontAwesomeIcon icon={faCaretDown} className="cursor-pointer text-sm text-secondary inline ml-2 h-6" />
+                    ... <FontAwesomeIcon icon="caret-down" className="cursor-pointer text-sm text-secondary inline ml-2 h-6" />
                   </p>
                 )}
               </p>
@@ -116,19 +116,21 @@ const Actions = ({ id, handleOnClick }: {id?: number, handleOnClick: (action: st
   const { data: sessionData } = useSession();
 
   return (
-    <div className="border-l-2 border-secondary flex flex-col">
+    <>
       { id ? (
-        <>
-          <FontAwesomeIcon icon={faCheckDouble} className="p-4 cursor-pointer text-gray-800 text-2xl pb-5" />
-          <FontAwesomeIcon icon={faPenToSquare} className="p-4 cursor-pointer text-gray-800 text-2xl pb-5" onClick={() => handleOnClick('edit')} />
-          <FontAwesomeIcon icon={faTrashCan} className="p-4 cursor-pointer text-gray-800 text-2xl" onClick={() => handleOnClick('delete')} />
-        </>
+        <div className="border-l-2 justify-between border-secondary flex flex-col text-gray-800">
+          <div className="flex flex-col">
+            <FontAwesomeIcon icon="check-double" className="cursor-pointer w-6 h-6 m-2 mb-4" />
+            <FontAwesomeIcon icon="pen-to-square" className="cursor-pointer w-6 h-6 m-2 mb-4" onClick={() => handleOnClick('edit')} />
+          </div>
+          <FontAwesomeIcon icon={['far', 'trash-can']} className="cursor-pointer w-6 h-6 m-2" onClick={() => handleOnClick('delete')} />
+        </div>
       ) : (
-        <>
-          { sessionData?.user?.email && <FontAwesomeIcon icon={faHeart} className="p-4 cursor-pointer text-gray-800 text-2xl pb-5" onClick={() => handleOnClick('create')} /> }
-          <FontAwesomeIcon icon={faRotate} className="p-4 cursor-pointer text-gray-800 text-2xl" onClick={() => handleOnClick('refresh')} />
-        </>
+        <div className="border-l-2 border-secondary flex flex-col text-gray-800">
+          { sessionData?.user?.email && <FontAwesomeIcon icon="heart" className="cursor-pointer w-6 h-6 m-2 mb-4" onClick={() => handleOnClick('create')} /> }
+          <FontAwesomeIcon icon="rotate" className="cursor-pointer w-6 h-6 m-2 mb-4" onClick={() => handleOnClick('refresh')} />
+        </div>
       )}
-    </div>
+    </>
   )
 }

@@ -15,9 +15,9 @@ import { ZodError } from "zod";
 
 import { getServerAuthSession } from "@/server/auth";
 import { db } from "@/server/db";
-import loadDictionary from '@/server/api/dictionaryLoader';
+import loadDictionaries, { type Dictionary } from '@/server/api/dictionariesLoader';
 
-const dictionary = loadDictionary();
+const dictionaries: Record<string, Dictionary> = loadDictionaries();
 
 /**
  * 1. CONTEXT
@@ -45,7 +45,7 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
   return {
     session: opts.session,
     db,
-    dictionary
+    dictionaries
   };
 };
 
@@ -120,7 +120,7 @@ export const publicProcedure = t.procedure;
  * @see https://trpc.io/docs/procedures
  */
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-  if (!ctx.session || !ctx.session.user) {
+  if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   return next({

@@ -19,11 +19,11 @@ const ColorPiker = ({ setColors }: { setColors: (value: { from?: string, to?: st
   return (
     <>
       <button
-        className="h-11 w-11 rounded-full bg-palette"
+        className="h-11 w-11 rounded-md bg-palette"
         onClick={() => setShowColorPicker(!showColorPicker)}
       />
       { showColorPicker && (
-        <div className="absolute bg-white rounded-lg shadow right-20 top-14 p-2">
+        <div className="absolute bg-white rounded-lg shadow right-0 top-14 p-2">
           <div className="flex justify-between items-center mb-2">
             <div className="flex flex-col items-center">
               <div className="bg-palette h-11 w-56 rounded-md cursor-crosshair mb-2" onClick={(e) => handleOnClick(e)}/>
@@ -78,8 +78,8 @@ function interpolateColor(colors: RegExpMatchArray | null, position: number) {
   const lowerColor = colors[index]!.split(', ').map((color) => Number(color));
   const upperColor = colors[index + 1]!.split(', ').map((color) => Number(color));
 
-  const lowerRGB = { r: lowerColor[0]!, g: lowerColor[1]!, b: lowerColor[2]! };
-  const upperRGB = { r: upperColor[0]!, g: upperColor[1]!, b: upperColor[2]! };
+  const lowerRGB = arrayToRgb(lowerColor)
+  const upperRGB = arrayToRgb(upperColor)
 
   const ratio = position * (colors.length - 1) - index;
   const interpolatedColor = {
@@ -89,6 +89,10 @@ function interpolateColor(colors: RegExpMatchArray | null, position: number) {
   };
 
   return rgbToHex(interpolatedColor.r, interpolatedColor.g, interpolatedColor.b);
+}
+
+const arrayToRgb = (array: number[]) => {
+  return { r: array[0]!, g: array[1]!, b: array[2]! };
 }
 
 const rgbToHex = (r: number, g: number, b: number) => {

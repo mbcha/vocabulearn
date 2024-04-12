@@ -54,15 +54,17 @@ model Session {
 }
 
 model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    accounts      Account[]
-    sessions      Session[]
-    posts         Post[]
-    words         Word[]
+    id             String    @id @default(cuid())
+    name           String?
+    email          String?   @unique
+    emailVerified  DateTime?
+    image          String?
+    accounts       Account[]
+    sessions       Session[]
+    posts          Post[]
+    words          Word[]
+    primaryColor   String?
+    secondaryColor String?
 }
 
 model VerificationToken {
@@ -83,6 +85,7 @@ model Word {
     createdAt     DateTime @default(now())
     updatedAt     DateTime @updatedAt
     userId        String
+    language      String
 
     user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 

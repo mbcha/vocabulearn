@@ -10,8 +10,9 @@ import {
 
 export const wordRouter = createTRPCRouter({
   getRandomWord: publicProcedure
-    .query(async ({ ctx }) => {
-      const dictionary = ctx.dictionary;
+    .input(z.object({ language: z.string().min(2) }))
+    .query(async ({ ctx, input }) => {
+      const dictionary = ctx.dictionaries[input.language]!;
       const keys = Object.keys(dictionary);
 
       let findRandomWord = true;
@@ -30,16 +31,21 @@ export const wordRouter = createTRPCRouter({
         }
       }
 
-      return { name: word, definition: dictionary[word]! };
+      return { name: word, definition: dictionary[word]!, language: input.language };
     }),
 
   create: protectedProcedure
-    .input(z.object({ name: z.string().min(1), definition: z.string().min(1) }))
+    .input(z.object({
+      name: z.string().min(1),
+      definition: z.string().min(1),
+      language: z.string().min(2)
+    }))
     .mutation(async ({ ctx, input }): Promise<Word> => {
       return await ctx.db.word.create({
         data: {
           name: input.name,
           definition: input.definition,
+          language: input.language,
           user: { connect: { id: ctx.session.user.id } },
         },
       });
@@ -68,18 +74,23 @@ export const wordRouter = createTRPCRouter({
     }),
 
   getUserWords: protectedProcedure
-    .query(({ ctx }) => {
+    .input(z.object({ language: z.string().min(2) }))
+    .query(({ ctx, input }) => {
       return ctx.db.word.findMany({
         orderBy: { createdAt: "desc" },
-        where: { user: { id: ctx.session.user.id } },
+        where: {
+          user: { id: ctx.session.user.id },
+          language: input.language
+        },
       });
     }),
 
   findDefinition: protectedProcedure
-    .input(z.object({ word: z.string().min(1) }))
+    .input(z.object({ word: z.string().min(1), language: z.string().min(2) }))
     .query(({ ctx, input }) => {
       const word = input.word;
-      const definition = ctx.dictionary[word];
+      const dictionary = ctx.dictionaries[input.language]!;
+      const definition = dictionary[word];
       return { word, definition };
   })
 });
